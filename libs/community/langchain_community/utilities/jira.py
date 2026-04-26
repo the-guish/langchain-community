@@ -2,8 +2,8 @@
 
 from typing import Any, Dict, List, Optional, Union
 
-from langchain_core.utils import get_from_dict_or_env
-from pydantic import BaseModel, ConfigDict, model_validator
+from langchain_core.utils import convert_to_secret_str, get_from_dict_or_env
+from pydantic import BaseModel, ConfigDict, SecretStr, model_validator
 from typing_extensions import TypedDict
 
 
@@ -45,7 +45,7 @@ class JiraAPIWrapper(BaseModel):
 
     jira_username: Optional[str] = None
 
-    jira_api_token: Optional[str] = None
+    jira_api_token: Optional[SecretStr] = None
     """Jira API token when you choose to connect to Jira with api token."""
 
     jira_oauth2: Optional[Union[JiraOauth2, str]] = None
@@ -68,9 +68,12 @@ class JiraAPIWrapper(BaseModel):
         )
         values["jira_username"] = jira_username
 
-        jira_api_token = get_from_dict_or_env(
-            values, "jira_api_token", "JIRA_API_TOKEN", default=""
+        jira_api_token = convert_to_secret_str(
+            get_from_dict_or_env(values, "jira_api_token", "JIRA_API_TOKEN", default="")
         )
+
+        jira_api_token_plaintext = jira_api_token.get_secret_value()
+
         values["jira_api_token"] = jira_api_token
 
         jira_oauth2 = get_from_dict_or_env(
@@ -105,7 +108,7 @@ class JiraAPIWrapper(BaseModel):
         jira_cloud = jira_cloud_str.lower() == "true"
         values["jira_cloud"] = jira_cloud
 
-        if jira_api_token and jira_oauth2:
+        if jira_api_token_plaintext and jira_oauth2:
             raise ValueError(
                 "You have to provide either a jira_api_token or a jira_oauth2. "
                 "Not both."
@@ -119,25 +122,25 @@ class JiraAPIWrapper(BaseModel):
                 "Please install it with `pip install atlassian-python-api`"
             )
 
-        if jira_api_token:
+        if jira_api_token_plaintext:
             if jira_username == "":
                 jira = Jira(
                     url=jira_instance_url,
-                    token=jira_api_token,
+                    token=jira_api_token_plaintext,
                     cloud=jira_cloud,
                 )
             else:
                 jira = Jira(
                     url=jira_instance_url,
                     username=jira_username,
-                    password=jira_api_token,
+                    password=jira_api_token_plaintext,
                     cloud=jira_cloud,
                 )
 
             confluence = Confluence(
                 url=jira_instance_url,
                 username=jira_username,
-                password=jira_api_token,
+                password=jira_api_token_plaintext,
                 cloud=jira_cloud,
             )
         elif jira_oauth2:
