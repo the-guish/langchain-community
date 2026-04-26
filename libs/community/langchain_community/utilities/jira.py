@@ -45,7 +45,7 @@ class JiraAPIWrapper(BaseModel):
 
     jira_username: Optional[str] = None
 
-    jira_api_token: Optional[SecretStr] = None
+    jira_api_token: Optional[Union[SecretStr, str]] = None
     """Jira API token when you choose to connect to Jira with api token."""
 
     jira_oauth2: Optional[Union[JiraOauth2, str]] = None
@@ -69,9 +69,7 @@ class JiraAPIWrapper(BaseModel):
         values["jira_username"] = jira_username
 
         jira_api_token = convert_to_secret_str(
-            get_from_dict_or_env(
-                values, "jira_api_token", "JIRA_API_TOKEN", default=""
-            )
+            get_from_dict_or_env(values, "jira_api_token", "JIRA_API_TOKEN", default="")
         )
 
         jira_api_token_plaintext = jira_api_token.get_secret_value()
