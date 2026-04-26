@@ -88,3 +88,16 @@ class TestJiraAPIWrapper:
             oauth2={"client": None, **oauth_dict},
             cloud=False,
         )
+
+    def test_api_token_not_in_repr(self, mock_jira: MagicMock) -> None:
+        """Test that the API token is not exposed in string representations."""
+        secret_token = "my_test_token"
+        jira_wrapper = JiraAPIWrapper(
+            jira_username="test_user",
+            jira_api_token=secret_token,
+            jira_instance_url="https://test.atlassian.net",
+            jira_cloud=True,
+        )
+
+        assert secret_token not in str(jira_wrapper)
+        assert secret_token not in repr(jira_wrapper)
